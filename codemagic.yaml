@@ -1,22 +1,8 @@
-workflows:
-  ios-horizon-build:
-    name: Horizon iOS Client Build
-    max_build_duration: 30
-    instance_type: mac_mini_m1 # Sử dụng máy ảo Mac để dễ xử lý môi trường Apple
-    environment:
-      groups:
-        - target-env
-      vars:
-        JAVA_VERSION: "25" # Yêu cầu máy ảo kích hoạt Java 25
-      xcode: latest
-      cocoapods: default
-    triggering:
-      events:
-        - push
     scripts:
       - name: Install Rust and iOS Target
         script: |
-          curl --proto '=https' --tlv1.2 -sSf https://rustup.rs | sh -s -- -y
+          # Đã sửa --tlsv1.2 và đổi URL thành sh.rustup.rs
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
           rustup target add aarch64-apple-ios
       - name: Prepare Assets (Requires Java 25 and Python)
@@ -62,5 +48,3 @@ workflows:
           
           # Nén thành file .ipa hoàn chỉnh
           zip -r HorizonMinecraft.ipa Payload
-    artifacts:
-      - HorizonMinecraft.ipa # Chỉ định Codemagic giữ lại file này sau khi build xong
