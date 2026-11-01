@@ -1,14 +1,27 @@
-scripts:
+workflows:
+  ios-horizon-build:
+    name: Horizon iOS Client Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - target-env
+      vars:
+        JAVA_VERSION: "25"
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+    scripts:
       - name: Install Rust and iOS Target
         script: |
-          # Đã sửa --tlsv1.2 và đổi URL thành sh.rustup.rs
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
           rustup target add aarch64-apple-ios
       - name: Prepare Assets (Requires Java 25 and Python)
         script: |
           source $HOME/.cargo/env
-          # Cần chạy lệnh tải/chuẩn bị asset của Horizon ở đây
           cargo run --release -p horizon-prepare -- --prepare
       - name: Build Rust iOS Client
         script: |
@@ -17,10 +30,8 @@ scripts:
       - name: Package IPA for TrollStore
         script: |
           mkdir -p Payload
-          # Copy file binary vừa build xong vào Payload
           cp target/aarch64-apple-ios/release/horizon-client Payload/
           
-          # Tự động tạo file Info.plist nhanh trên máy ảo
           cat <<EOF > Payload/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
@@ -46,5 +57,6 @@ scripts:
           </plist>
           EOF
           
-          # Nén thành file .ipa hoàn chỉnh
           zip -r HorizonMinecraft.ipa Payload
+    artifacts:
+      - HorizonMinecraft.ipa
