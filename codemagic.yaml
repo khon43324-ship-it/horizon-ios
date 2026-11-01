@@ -1,4 +1,4 @@
-    scripts:
+scripts:
       - name: Install Rust and iOS Target
         script: |
           # Đã sửa --tlsv1.2 và đổi URL thành sh.rustup.rs
