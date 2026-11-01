@@ -1,37 +1,14 @@
-workflows:
-  ios-horizon-build:
-    name: Horizon iOS Client Build
-    max_build_duration: 30
-    instance_type: mac_mini_m1
-    environment:
-      groups:
-        - target-env
-      vars:
-        JAVA_VERSION: "25"
-      xcode: latest
-      cocoapods: default
-    triggering:
-      events:
-        - push
     scripts:
       - name: Install Rust and iOS Target
-        script: |
-          curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y
-          source $HOME/.cargo/env
-          rustup target add aarch64-apple-ios
+        script: curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y && source $HOME/.cargo/env && rustup target add aarch64-apple-ios
       - name: Prepare Assets (Requires Java 25 and Python)
-        script: |
-          source $HOME/.cargo/env
-          cargo run --release -p horizon-prepare -- --prepare
+        script: source $HOME/.cargo/env && cargo run --release -p horizon-prepare -- --prepare
       - name: Build Rust iOS Client
-        script: |
-          source $HOME/.cargo/env
-          cargo build --release --target aarch64-apple-ios -p horizon-client
+        script: source $HOME/.cargo/env && cargo build --release --target aarch64-apple-ios -p horizon-client
       - name: Package IPA for TrollStore
         script: |
           mkdir -p Payload
           cp target/aarch64-apple-ios/release/horizon-client Payload/
-          
           cat <<EOF > Payload/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
@@ -56,7 +33,4 @@ workflows:
           </dict>
           </plist>
           EOF
-          
           zip -r HorizonMinecraft.ipa Payload
-    artifacts:
-      - HorizonMinecraft.ipa
