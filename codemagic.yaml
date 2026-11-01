@@ -1,14 +1,44 @@
+workflows:
+  ios-horizon-build:
+    name: Horizon iOS Client Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - target-env
+      vars:
+        JAVA_VERSION: "25"
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
     scripts:
       - name: Install Rust and iOS Target
-        script: curl --proto '=https' --tlsv1.2 -sSf https://rustup.rs | sh -s -- -y && source $HOME/.cargo/env && rustup target add aarch64-apple-ios
+        script: |
+          # Sử dụng lệnh cài đặt rút gọn chuẩn cho máy ảo CI/CD
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          
+          # Nạp biến môi trường ngay lập tức cho các câu lệnh tiếp theo
+          export PATH="$HOME/.cargo/bin:$PATH"
+          rustup target add aarch64-apple-ios
       - name: Prepare Assets (Requires Java 25 and Python)
-        script: source $HOME/.cargo/env && cargo run --release -p horizon-prepare -- --prepare
+        script: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          # Chạy lệnh trích xuất tài nguyên từ bộ cài gốc sang Horizon
+          cargo run --release -p horizon-prepare -- --prepare
       - name: Build Rust iOS Client
-        script: source $HOME/.cargo/env && cargo build --release --target aarch64-apple-ios -p horizon-client
+        script: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          # Tiến hành biên dịch mã nguồn sang file hệ thống iOS
+          cargo build --release --target aarch64-apple-ios -p horizon-client
       - name: Package IPA for TrollStore
         script: |
           mkdir -p Payload
+          # Sao chép file thực thi thô sau khi build xong
           cp target/aarch64-apple-ios/release/horizon-client Payload/
+          
+          # Tự động đóng gói file Info.plist đi kèm để TrollStore nhận diện thông tin App
           cat <<EOF > Payload/Info.plist
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://apple.com">
@@ -33,4 +63,8 @@
           </dict>
           </plist>
           EOF
+          
+          # Nén toàn bộ cấu trúc thành file định dạng .ipa hoàn chỉnh
           zip -r HorizonMinecraft.ipa Payload
+    artifacts:
+      - HorizonMinecraft.ipa
