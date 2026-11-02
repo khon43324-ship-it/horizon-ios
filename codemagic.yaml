@@ -1,41 +1,49 @@
 workflows:
-  horizon-ios-check:
-    name: Horizon iOS compile check
+  horizon-ios-ipa:
+    name: Horizon iOS IPA (unsigned)
     instance_type: mac_mini_m2
-    max_build_duration: 120
+    max_build_duration: 90
     environment:
       xcode: latest
       vars:
-        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+        HORIZON_TELEMETRY_URL: "off"
+        CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
+        CARGO_PROFILE_RELEASE_LTO: "false"
+        CARGO_INCREMENTAL: "0"
     scripts:
+      - name: Check Xcode
+        script: |
+          set -euo pipefail
+          bash tools/ci/ios-toolchain.sh
       - name: Install Rust + iOS target
         script: |
+          set -euo pipefail
           curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
           source "$HOME/.cargo/env"
           rustup target add aarch64-apple-ios
-      - name: Build for iOS
+      - name: Build game (Rust)
         script: |
-          set -o pipefail
+          set -euo pipefail
           source "$HOME/.cargo/env"
-          cargo build --release -p horizon-client --target aarch64-apple-ios 2>&1 | tee build.log
+          cargo build --release --locked --target aarch64-apple-ios -p horizon-client --no-default-features --features audio 2>&1 | tee cargo-build.log
+      - name: Bundle IPA (XcodeGen + xcodebuild)
+        script: |
+          set -euo pipefail
+          source "$HOME/.cargo/env"
+          command -v xcodegen >/dev/null || brew install xcodegen
+          ( cd packaging/ios && xcodegen generate )
+          HORIZON_GAME_PREBUILT=1 xcodebuild -project packaging/ios/HorizonIOS.xcodeproj \
+            -target HorizonGame -configuration Release -sdk iphoneos -arch arm64 \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY= CODE_SIGNING_REQUIRED=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf \
+            CONFIGURATION_BUILD_DIR="$PWD/build-ios" \
+            build > xcode-game-build.log 2>&1 || { tail -80 xcode-game-build.log; exit 1; }
+          rm -rf game-xcode && mkdir -p game-xcode/Payload
+          cp -a build-ios/HorizonGame.app game-xcode/Payload/
+          ( cd game-xcode && zip -qry ../Horizon-game-unsigned.ipa Payload )
+          ls -lh Horizon-game-unsigned.ipa
     artifacts:
-      - build.log
-      - target/aarch64-apple-ios/release/*
-  horizon-macos:
-    name: Horizon macOS (Apple Silicon)
-    instance_type: mac_mini_m2
-    max_build_duration: 120
-    environment:
-      xcode: latest
-    scripts:
-      - name: Install Rust
-        script: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
-          source "$HOME/.cargo/env"
-          rustc --version   # README yêu cầu Rust >= 1.90
-      - name: Build client
-        script: |
-          source "$HOME/.cargo/env"
-          cargo build --release -p horizon-client
-    artifacts:
-      - target/release/horizon-client
+      - Horizon-game-unsigned.ipa
+      - cargo-build.log
+      - xcode-game-build.log
