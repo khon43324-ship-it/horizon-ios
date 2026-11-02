@@ -5,6 +5,8 @@ workflows:
     max_build_duration: 120
     environment:
       xcode: latest
+      vars:
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     scripts:
       - name: Install Rust + iOS target
         script: |
