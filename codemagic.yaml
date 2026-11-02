@@ -1,4 +1,24 @@
 workflows:
+  horizon-ios-check:
+    name: Horizon iOS compile check
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    environment:
+      xcode: latest
+    scripts:
+      - name: Install Rust + iOS target
+        script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal
+          source "$HOME/.cargo/env"
+          rustup target add aarch64-apple-ios
+      - name: Build for iOS
+        script: |
+          set -o pipefail
+          source "$HOME/.cargo/env"
+          cargo build --release -p horizon-client --target aarch64-apple-ios 2>&1 | tee build.log
+    artifacts:
+      - build.log
+      - target/aarch64-apple-ios/release/*
   horizon-macos:
     name: Horizon macOS (Apple Silicon)
     instance_type: mac_mini_m2
