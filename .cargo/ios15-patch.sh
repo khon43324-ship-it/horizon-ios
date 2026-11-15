@@ -42,10 +42,6 @@ extension View {
         }
     }
 
-    @ViewBuilder func compatDragIndicator() -> some View {
-        if #available(iOS 16.0, *) { self.presentationDragIndicator(.visible) } else { self }
-    }
-
     @ViewBuilder func compatHideNavBarBackground() -> some View {
         if #available(iOS 16.0, *) { self.toolbarBackground(.hidden, for: .navigationBar) } else { self }
     }
@@ -89,7 +85,8 @@ sed -i.bak 's/\.presentationDetents(\[\.medium, \.large\])/.compatDetents(.mediu
 sed -i.bak 's/\.presentationDragIndicator(\.visible)/.compatDragIndicator()/' $L/Worlds.swift
 sed -i.bak 's/\.toolbarBackground(\.hidden, for: \.navigationBar)/.compatHideNavBarBackground()/' $L/HomeView.swift
 sed -i.bak 's/\.navigationDestination(isPresented:/.compatDestination(isPresented:/' $L/HomeView.swift
-sed -i.bak 's/\.tracking(/.kerning(/' $L/DownloadView.swift $L/HomeView.swift
+sed -i.bak 's/\.tracking(/.compatTracking(/' $L/DownloadView.swift $L/HomeView.swift
+sed -i.bak 's/\.semibold))\.underline()/.semibold)).compatUnderline()/' $L/HomeView.swift
 # iPad split view is iOS 16: older systems use the tab layout.
 sed -i.bak 's/if sizeClass == \.regular {/if sizeClass == .regular, #available(iOS 16.0, *) {/' $L/HomeView.swift
 
