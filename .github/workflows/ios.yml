@@ -48,6 +48,8 @@ jobs:
           persist-credentials: false
       - name: Check the Apple toolchain
         run: bash tools/ci/ios-toolchain.sh
+      - name: Lower the minimum to iOS 15
+        run: bash .cargo/ios15-patch.sh
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ env.IOS_TARGET }}
