@@ -41,7 +41,17 @@ extension View {
             self
         }
     }
+    @ViewBuilder func compatDragIndicator() -> some View {
+        if #available(iOS 16.0, *) { self.presentationDragIndicator(.visible) } else { self }
+    }
 
+    @ViewBuilder func compatTracking(_ value: CGFloat) -> some View {
+        if #available(iOS 16.0, *) { self.tracking(value) } else { self }
+    }
+
+    @ViewBuilder func compatUnderline() -> some View {
+        if #available(iOS 16.0, *) { self.underline() } else { self }
+    }
     @ViewBuilder func compatHideNavBarBackground() -> some View {
         if #available(iOS 16.0, *) { self.toolbarBackground(.hidden, for: .navigationBar) } else { self }
     }
